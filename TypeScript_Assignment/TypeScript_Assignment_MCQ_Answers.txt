@@ -1,0 +1,124 @@
+TypeScript Assignment – MCQ Answers
+
+Q1. What is the compile-time type of value?
+
+Code:
+    const arr = [1, "two", 3] as const;
+    const value = arr[1];
+
+Answer: B. "two"
+
+Reason:
+    Because we used `as const`, TypeScript treats the array as a readonly tuple with exact literal values:
+    readonly [1, "two", 3]
+    So:
+    arr[0] -> 1
+    arr[1] -> "two"
+    arr[2] -> 3
+    Therefore, the type of value is the exact literal type "two", not just string.
+
+Q2. Given the following, what error occurs and why?
+
+Code:
+    interface A {
+      x: number;
+      y?: number;
+    }
+
+    class C implements A {
+      x = 0;
+    }
+
+    const c = new C();
+    c.y = 10;
+
+Answer: B. Error: Property 'y' does not exist on type 'C', implementing an interface with an optional property doesn't create that property on the class itself.
+
+Reason:
+    The y property is optional in interface A. This means class C does not have to implement y.
+    But an optional property in an interface does not automatically create that property inside the class.
+    Class C only has:
+    x
+    So when we write:
+    c.y = 10;
+    TypeScript gives an error because y does not actually exist on class C.
+
+
+Q3. What does the following code do, and why?
+
+Code:
+    enum Status {
+      Active = "ACTIVE",
+      Inactive = "INACTIVE",
+    }
+
+    enum Level {
+      Active = "ACTIVE",
+      Low = "LOW",
+    }
+
+    function check(s: Status) {
+      return s;
+    }
+
+    check(Level.Active);
+
+Answer: B. Compile-time error, string enum members are nominally typed, so Level.Active isn't assignable to Status despite identical string values.
+
+Reason:
+    Even though both values contain the string "ACTIVE", they belong to different enums.
+    Status.Active belongs to the Status enum.
+    Level.Active belongs to the Level enum.
+    TypeScript does not treat members from two different string enums as interchangeable just because their string values are the same.
+    So:
+    check(Level.Active);
+    causes a compile-time error because the function expects a Status, but we are passing a Level.
+
+
+Q4. What is the type of A["id"]?
+
+Code:
+    type A = { id: number } & { id: string };
+
+Answer: C. never
+
+Reason:
+    The & operator creates an intersection type, so the resulting type must satisfy both parts.
+    That means id must be:
+    number AND string
+    But a value cannot be both a number and a string at the same time.
+    So there is no possible value for id.
+    Therefore:
+    A["id"] -> never
+
+
+Q5. What is the inferred return type of getArea, and what compiler issue exists?
+
+Code:
+    type Shape =
+      | { kind: "circle"; radius: number }
+      | { kind: "square"; side: number }
+      | { kind: "triangle"; base: number; height: number };
+
+    function getArea(shape: Shape): number {
+      switch (shape.kind) {
+        case "circle":
+          return Math.PI * shape.radius ** 2;
+        case "square":
+          return shape.side ** 2;
+      }
+    }
+
+Answer: B. Compile-time error, not all code paths return a value; the triangle case is unhandled and there's no default/never-based exhaustiveness check.
+
+Reason:
+    The function is declared to return number.
+    The switch handles:
+    - circle
+    - square
+    But it does not handle:
+    - triangle
+    There is also no default case with a never check.
+    So TypeScript detects that there is a possible path where the function does not return a value and gives a compile-time error.
+
+
