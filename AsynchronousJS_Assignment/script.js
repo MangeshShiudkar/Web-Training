@@ -10,7 +10,7 @@ async function fetchRepositories(username) {
     if (!response.ok) {
         throw new Error("Unable to fetch repositories");
     }
-    return await response.json(); // Direct return
+    return await response.json();
 }
 
 async function fetchOwnerDetails(username) {
