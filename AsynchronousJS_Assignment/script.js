@@ -26,11 +26,14 @@ async function fetchGitHubData(username) {
         message.textContent = "Loading...";
         ownerContainer.innerHTML = "";
         repositoriesContainer.innerHTML = "";
+        ownerContainer.style.display = "none";
+        repositoriesContainer.style.display = "none";
 
-        const [owner, repositories] = await Promise.all([
-            fetchOwnerDetails(username),
-            fetchRepositories(username)
-        ]);
+        const owner = await fetchOwnerDetails(username);
+        const repositories = await fetchRepositories(username);
+
+        ownerContainer.style.display = "block";
+        repositoriesContainer.style.display = "block";
 
         if(repositories.length === 0) {
             message.textContent = "This user has no public repositories.";
