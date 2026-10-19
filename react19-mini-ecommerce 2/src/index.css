@@ -1,0 +1,6 @@
+@import "tailwindcss";
+
+/* Use the Inter font (loaded with React's preinit) and fall back to system fonts. */
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+}
