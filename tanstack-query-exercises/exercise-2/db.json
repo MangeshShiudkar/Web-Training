@@ -1,0 +1,46 @@
+{
+  "users": [
+    {
+      "id": 2,
+      "name": "Priya Patil",
+      "email": "priya@example.com",
+      "role": "Designer"
+    },
+    {
+      "id": 3,
+      "name": "Rohan Deshmukh",
+      "email": "rohan@example.com",
+      "role": "Manager"
+    },
+    {
+      "name": "fdgsdhgs",
+      "email": "sghsfghdfsgg@gmail.com",
+      "role": "Manager",
+      "id": 4
+    },
+    {
+      "name": "dfgndfgndf",
+      "email": "afkvjans@gmail.com",
+      "role": "Manager",
+      "id": 5
+    },
+    {
+      "name": "bfgbdbn",
+      "email": "dfkgjnsdfjn@gmail.com",
+      "role": "Designer",
+      "id": 6
+    },
+    {
+      "name": "sdfhbsd",
+      "email": "dfsgsdf@gmail.com",
+      "role": "Designer",
+      "id": 7
+    },
+    {
+      "name": "nbm bn ",
+      "email": "gbsdfbg@gmail.com",
+      "role": "Manager",
+      "id": 8
+    }
+  ]
+}
