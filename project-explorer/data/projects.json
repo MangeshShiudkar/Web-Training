@@ -1,0 +1,46 @@
+[
+  {
+    "id": "1",
+    "name": "Website Refresh",
+    "description": "A clearer, faster website for our customers and partners.",
+    "status": "active",
+    "owner": "Maya Chen",
+    "team": 6,
+    "progress": 68,
+    "dueDate": "Nov 18, 2026",
+    "category": "Web platform"
+  },
+  {
+    "id": "2",
+    "name": "Customer Dashboard",
+    "description": "A single place for customers to follow their account activity.",
+    "status": "active",
+    "owner": "Jordan Lee",
+    "team": 4,
+    "progress": 42,
+    "dueDate": "Dec 02, 2026",
+    "category": "Product"
+  },
+  {
+    "id": "3",
+    "name": "Design System",
+    "description": "Reusable interface patterns for a consistent product experience.",
+    "status": "completed",
+    "owner": "Sam Rivera",
+    "team": 5,
+    "progress": 100,
+    "dueDate": "Oct 10, 2026",
+    "category": "Design"
+  },
+  {
+    "id": "4",
+    "name": "Mobile Onboarding",
+    "description": "A simpler first-run experience for the mobile application.",
+    "status": "planned",
+    "owner": "Avery Patel",
+    "team": 3,
+    "progress": 12,
+    "dueDate": "Jan 15, 2027",
+    "category": "Mobile"
+  }
+]
