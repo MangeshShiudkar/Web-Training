@@ -1,0 +1,20 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-brand: #147d72;
+  --color-brand-dark: #0e625a;
+  --color-ink: #202a28;
+  --color-muted: #687571;
+  --color-canvas: #f4f7f5;
+  --color-surface: #ffffff;
+  --color-line: #dce5e1;
+  --color-success: #24724e;
+  --color-warning: #9a5c12;
+  --color-danger: #a63e3e;
+  --spacing-shell: 1.5rem;
+  --radius-panel: 0.75rem;
+}
+
+body {
+  @apply m-0 min-w-[320px] bg-canvas font-sans text-ink antialiased;
+}
