@@ -1,0 +1,772 @@
+Form Architecture & Runtime Schema Validation (React Hook Form + Zod) 
+Objective 
+The objective of this training is to help trainees understand how forms are designed, validated and organized in modern React applications. Forms are one of the most common and most error-prone parts of a frontend project, and a well-planned form architecture keeps them fast, type-safe and maintainable as the application grows. 
+By the end of this training, participants will be able to: 
+● Understand why forms need architecture, and the cost of unstructured form code. ● Explain the difference between controlled and uncontrolled inputs, and how React Hook Form uses this to reduce re-renders. 
+● Use the core React Hook Form APIs to manage form state, submission and errors. ● Understand the difference between compile-time types and runtime validation, and why both are needed. 
+● Define validation schemas using Zod and connect them to React Hook Form through a resolver. 
+● Use a single schema as the source of truth for validation, TypeScript types and backend validation. 
+● Build reusable and composable form components instead of large monolithic form files. ● Handle complex real-world forms: dynamic field lists, multi-step flows and conditional fields. ● Apply basic performance and accessibility practices to forms. 
+● Identify common form mistakes and learn how to avoid them. 
+Outline 
+Module 1 - Forms and Schema Validation Basics 
+1.1 Why Forms Need Architecture 
+1.2 Controlled vs Uncontrolled Components 
+1.3 What is Runtime Schema Validation? 
+1.4 The Form Data Flow 
+Module 2 - React Hook Form Fundamentals 
+2.1 The useForm Hook 
+2.2 register and handleSubmit 
+2.3 Form State 
+2.4 Default Values 
+2.5 Validation Modes 
+2.6 Controller for UI Libraries 
+Module 3 - Runtime Schema Validation with Zod 
+3.1 Types vs Runtime Data 
+3.2 Schema as the Single Source of Truth 
+3.3 Zod Essentials 
+3.4 Cross-Field Validation 
+3.5 Coercion and Transformation 
+3.6 Other Schema Validation Libraries 
+Module 4 - Connecting React Hook Form with Zod 
+4.1 What is a Resolver? 
+Raja Software Labs Confidential 1
+4.2 Setting up zodResolver 
+4.3 Displaying Errors 
+4.4 A Common Type Issue 
+Module 5 - Designing the Form Architecture 
+5.1 Problems with Large Form Components 
+5.2 FormProvider and useFormContext 
+5.3 Reusable Field Components 
+5.4 Schema Composition 
+5.5 Organizing Form Files 
+Module 6 - Handling Complex Forms 
+6.1 Dynamic Fields with useFieldArray 
+6.2 Multi-Step Forms 
+6.3 Conditional Fields 
+Module 7 - Forms and the Backend 
+7.1 Client vs Server Validation 
+7.2 Sharing the Schema 
+7.3 Handling Server Errors 
+7.4 Async Validation 
+Module 8 - Performance and Accessibility 
+8.1 How React Hook Form Avoids Re-renders 
+8.2 watch vs useWatch 
+8.3 Large Form Pitfalls 
+8.4 Accessible Forms 
+8.5 Common Form Mistakes 
+Module 9 - Applying It: A Case Study 
+9.1 Understand the Requirements 
+9.2 Identify the Steps and Fields 
+9.3 Design the Schema 
+9.4 Break the UI into Field Components 
+9.5 Decide Where Form State Lives 
+9.6 Plan Validation Timing 
+9.7 Plan the Submission Flow 
+9.8 Apply the Form Checklist 
+Introduction 
+Almost every application collects data from users - logging in, registering, checking out, raising a request. Forms look simple, but they quickly become one of the hardest parts of a frontend codebase: they hold state, enforce business rules, talk to the backend, and have to stay fast and accessible while doing it. 
+This training is about doing that deliberately. We use React Hook Form to manage form state and Zod to define validation rules, and we treat the schema as the single source of truth for validation, TypeScript types and backend checks alike. 
+The first half covers the fundamentals - the two libraries and how they connect. The second half is the more important one: how to structure forms so they stay maintainable when they grow to forty fields, five steps and several developers. We finish with a case study that puts all of it together. 
+All examples use React Hook Form v7 and Zod 4. 
+Raja Software Labs Confidential 2
+Module 1 - Forms and Schema Validation Basics 
+In this module we look at why forms need a deliberate design, and introduce the two libraries this training is built around. 
+1.1 Why Forms Need Architecture 
+A form has to manage several things at once: 
+● Field values - what the user has typed so far. 
+● Validation rules - what makes the data valid. 
+● Errors - which fields are wrong, and what message to show. 
+● UI state - which fields were touched, whether the form is dirty, whether it is submitting. ● Submission - sending data to the backend and handling failures. 
+When all of this is written by hand inside one component, three problems appear: 
+Problem 
+What it looks like
+Performance 
+Every keystroke updates state, so the whole form re-renders.
+Duplication 
+Validation rules are written on the client, then written again on the server.
+Type drift 
+TypeScript types are hand-written and slowly go out of sync with the real rules.
+
+
+
+The solution is to split responsibilities: a form library manages state, and a schema library owns the validation rules. This training uses React Hook Form for the first, and Zod for the second. 
+1.2 Controlled vs Uncontrolled Components 
+This is the single most important idea behind React Hook Form. 
+Controlled 
+Uncontrolled
+React state holds the value 
+The DOM holds the value
+Value read from state on every render 
+Value read through a ref when needed
+Component re-renders on every keystroke
+No re-render while typing
+Simple for small forms 
+Much faster for large forms
+
+
+
+React Hook Form uses uncontrolled inputs by default. It registers each input through a ref, so typing does not re-render the component. It only re-renders when something you actually subscribed to changes, such as an error message. 
+This is why a React Hook Form with 30 fields feels instant, while the same form built with useState per field feels sluggish. 
+1.3 What is Runtime Schema Validation? 
+TypeScript types exist only while you write and compile code. They are removed from the final JavaScript bundle. That means TypeScript cannot protect you from: 
+● A user typing text into a field you expect to be a number. 
+● An API returning a shape different from what you declared. 
+● Data pulled from localStorage or a URL query string. 
+Raja Software Labs Confidential 3
+A schema is a description of the data written in code, which can be executed at runtime. Unlike a TypeScript type, a schema is real code that runs and checks actual values. 
+The key benefit: from one schema you get both the runtime check and the TypeScript type. You write the rules once. 
+const loginSchema = z.object({ 
+ email: z.email(), 
+ password: z.string().min(8), 
+}) 
+// The type is derived FROM the schema - never written by hand type LoginForm = z.infer<typeof loginSchema>
+
+
+
+1.4 The Form Data Flow 
+The following diagram shows how the pieces fit together. 
+ Schema (Zod) 
+ | 
+ +-----------+-----------+ 
+ | | | 
+ v v v 
+ TypeScript Resolver Server-side 
+ types | validation 
+ v 
+ React Hook Form 
+ | 
+v 
+ Form UI Components
+
+
+
+Each layer has one responsibility: 
+● Schema - defines what valid data looks like. 
+● Resolver - the adapter that lets React Hook Form use the schema. 
+● React Hook Form - manages values, errors and submission. 
+● Components - display fields and error messages. 
+Module 2 - React Hook Form Fundamentals 
+This module covers the core API. Everything later in the training builds on these few functions. 
+npm install react-hook-form
+
+
+
+2.1 The useForm Hook 
+useForm() creates and returns a form instance. Everything you need comes from this one hook. 
+const { 
+ register, // connects an input to the form 
+ handleSubmit, // validates, then calls your submit function  control, // used by Controller and useFieldArray 
+ formState, // errors, isDirty, isValid, isSubmitting...  reset, // reset values 
+ setValue, // set a field programmatically 
+ getValues, // read values without subscribing 
+ trigger, // manually run validation 
+ setError, // set an error manually (useful for server errors) } = useForm({ defaultValues: { email: "", password: "" } })
+
+
+
+Raja Software Labs Confidential 4
+2.2 register and handleSubmit 
+register("fieldName") returns the props an input needs. Spreading it connects the input to the form. 
+<form onSubmit={handleSubmit(onSubmit)}> 
+ <input {...register("email")} /> 
+ <input type="password" {...register("password")} /> 
+ <button type="submit">Login</button> 
+</form>
+
+
+
+handleSubmit(onSubmit) runs validation first. Your onSubmit function is called only if the form is valid, and it receives fully typed data. 
+2.3 Form State 
+formState tells you what is happening in the form. The most used properties: 
+Property 
+Meaning
+errors 
+Validation errors, keyed by field name
+isDirty 
+The user changed something from the default values
+isValid 
+The form currently passes validation
+isSubmitting 
+The submit handler is still running (use it to disable the button)
+touchedFields 
+Fields the user has focused and left
+dirtyFields 
+Fields whose value differs from the default
+
+
+
+2.4 Default Values 
+Always provide `defaultValues`. It is the most common source of bugs for new users. ● Without it, React logs "changing an uncontrolled input to be controlled" warnings. ● reset() returns the form to these values. 
+● isDirty and dirtyFields are calculated by comparing against them. 
+useForm({ 
+ defaultValues: { name: "", email: "", age: 0 }, 
+})
+
+
+
+2.5 Validation Modes 
+The mode option decides *when* validation runs. This is a user-experience decision, not a technical one. 
+Mode 
+Validates when 
+Good for
+onSubmit 
+(default)
+The form is submitted 
+Most forms; least noisy
+onBlur 
+A field loses focus 
+Longer forms
+onChange 
+Every keystroke 
+Short forms; can feel aggressive
+
+
+
+Raja Software Labs Confidential 5
+Mode 
+Validates when 
+Good for
+onTouched 
+First blur, then on 
+change
+A good balance
+all 
+Blur and change 
+Live-feedback forms
+
+
+
+A common, friendly choice is mode: "onTouched" - the user is not shown an error before they have finished typing, but is corrected immediately afterwards. 
+2.6 Controller for UI Libraries 
+register works by attaching a ref to a native DOM input. Many component libraries (MUI, Ant Design, react-select, date pickers) do not expose a ref and are controlled internally. 
+For those, use Controller, which bridges a controlled component into React Hook Form. 
+<Controller 
+ name="country" 
+ control={control} 
+ render={({ field }) => <Select {...field} options={countries} />} />
+
+
+
+Rule of thumb: use register for native inputs, Controller only when you have to. Controller re-introduces controlled-component re-renders, so do not use it by default. 
+Reference: react-hook-form.com/docs - the API reference for useForm, register and Controller. 
+Module 3 - Runtime Schema Validation with Zod 
+React Hook Form manages state, but it does not know your business rules. That is the schema's job. 
+npm install zod
+
+
+
+3.1 Types vs Runtime Data 
+A TypeScript type is a promise you make to the compiler. A schema is a check that actually runs. 
+TypeScript type 
+Schema
+Exists only at compile time 
+Runs at runtime
+Removed from the bundle 
+Shipped in the bundle
+Cannot check real values 
+Checks real values
+Cannot produce error messages 
+Produces error messages
+
+
+
+3.2 Schema as the Single Source of Truth 
+Without a schema, the same rule is written in three places and drifts apart: 
+Frontend validation -> "password must be 8+ chars" 
+TypeScript interface -> password: string 
+Backend validation -> "password must be 6+ chars" <-- out of sync
+
+
+
+Raja Software Labs Confidential 6
+With a schema, one definition feeds all three: 
+ passwordSchema 
+ | 
+ +-----------------+-----------------+ 
+ v v v 
+form validation TS types server validation
+
+
+
+3.3 Zod Essentials 
+import { z } from "zod" 
+const userSchema = z.object({ 
+ name: z.string().min(2, { error: "Name is too short" }), 
+ email: z.email({ error: "Enter a valid email" }), 
+ age: z.number().min(18, { error: "Must be 18 or older" }),  bio: z.string().optional(), 
+ role: z.enum(["admin", "editor", "viewer"]), 
+ terms: z.literal(true, { error: "You must accept the terms" }), }) 
+type User = z.infer<typeof userSchema>
+
+
+
+Note the error option. Zod 4 replaced the older message, required_error and invalid_type_error options with this single parameter. The old form still works but is deprecated. 
+Two ways to run a schema: 
+● schema.parse(data) - returns typed data, throws if invalid. 
+● schema.safeParse(data) - returns { success, data } or { success, error }. Preferred, because it does not throw. 
+Zod 4 also moved string formats to top-level functions - z.email(), z.url(), z.uuid() - instead of z.string().email(). The chained form still works but is deprecated, so prefer the top-level version in new code. 
+Schemas can be composed just like components: 
+baseSchema.extend({ ... }) // add fields 
+z.object({ ...a.shape, ...b.shape }) // combine two schemas schema.pick({ email: true }) // take a subset 
+schema.partial() // make everything optional
+
+
+
+3.4 Cross-Field Validation 
+Some rules involve more than one field. Use .refine() and attach the error to a specific field with path. 
+const signupSchema = z.object({ 
+ password: z.string().min(8), 
+ confirmPassword: z.string(), 
+}).refine((data) => data.password === data.confirmPassword, { 
+ error: "Passwords do not match", 
+ path: ["confirmPassword"], // where the error shows up 
+})
+
+
+
+3.5 Coercion and Transformation 
+Raja Software Labs Confidential 7
+HTML inputs always produce strings, even type="number". A schema expecting a number will fail unless you convert. 
+Two options: 
+● z.coerce.number() in the schema, or 
+● register("age", { valueAsNumber: true }) in React Hook Form. 
+.transform() can also reshape data after validation, for example trimming whitespace. Be aware this makes the input type and the output type of the schema different - see section 4.4. 
+3.6 Other Schema Validation Libraries 
+Zod is the most widely used schema library and is what this training uses throughout. It is worth knowing that it is not the only option: 
+● Valibot - the same idea, but every validator is a separate import, so the bundle stays very small. A good choice when browser bundle size genuinely matters. 
+● Yup - older, still common in existing projects, usually seen alongside Formik. ● ArkType - focuses on TypeScript-native syntax and validation speed. 
+These libraries share a common interface called Standard Schema, and @hookform/resolvers provides a generic resolver that works with any of them. The practical consequence is that the validation library is a replaceable dependency: 
+// The resolver is the only integration point, so it can be swapped import { zodResolver } from "@hookform/resolvers/zod" 
+// A different library would only change this line 
+// import { standardSchemaResolver } from 
+"@hookform/resolvers/standard-schema"
+
+
+
+This is why validation rules belong in schema files rather than inside components. If the rules are isolated, changing the library later means rewriting those files and nothing else. 
+Reference: zod.dev - full API reference, including refine, transform and discriminated unions. 
+Module 4 - Connecting React Hook Form with Zod 
+npm install @hookform/resolvers
+
+
+
+4.1 What is a Resolver? 
+React Hook Form does not know how Zod works, and Zod does not know how forms work. A resolver is the small adapter between them. 
+React Hook Form -> resolver -> Zod schema 
+ <- errors <-
+
+
+
+The @hookform/resolvers package ships resolvers for Zod, Valibot, Yup, Joi, ArkType and others. We will use the Zod resolver throughout this training. 
+4.2 Setting up zodResolver 
+import { useForm } from "react-hook-form" 
+import { zodResolver } from "@hookform/resolvers/zod" 
+import { z } from "zod"
+
+
+
+Raja Software Labs Confidential 8
+const loginSchema = z.object({ 
+ email: z.email({ error: "Enter a valid email" }), 
+ password: z.string().min(8, { error: "At least 8 characters" }), }) 
+type LoginForm = z.infer<typeof loginSchema> 
+const { register, handleSubmit, formState: { errors, isSubmitting } } =  useForm<LoginForm>({ 
+ resolver: zodResolver(loginSchema), 
+ defaultValues: { email: "", password: "" }, 
+ mode: "onTouched", 
+ })
+
+
+
+That is the whole integration. From here on, all validation rules live in the schema, and no validation logic sits inside the component. 
+4.3 Displaying Errors 
+Errors are typed by field name, so the editor autocompletes them. 
+<input {...register("email")} aria-invalid={!!errors.email} /> {errors.email && <p role="alert">{errors.email.message}</p>}
+
+
+
+4.4 A Common Type Issue 
+Trainees regularly hit a confusing TypeScript error when using z.coerce or .transform(). 
+The reason: coercion accepts unknown input but produces a number output. So the schema really has two types - the values before validation, and the values after. A single generic on useForm forces them to be the same, and they are not. 
+// Fix: give useForm the input, context and output types 
+useForm<z.input<typeof schema>, unknown, z.output<typeof schema>>({  resolver: zodResolver(schema), 
+})
+
+
+
+The simpler alternative is to avoid coercion in the schema and use valueAsNumber on register instead. 
+The same input-versus-output split appears with .default(). A field with a default is optional on the input type but required on the output type, because the default is only filled in after validation. If the compiler complains about a field you thought was optional, this is usually why. 
+Reference: github.com/react-hook-form/resolvers - resolver list and usage examples. 
+Module 5 - Designing the Form Architecture 
+Everything so far works fine for a login form. This module is about what happens when the form has forty fields and five developers. 
+5.1 Problems with Large Form Components 
+A form written as one component tends to have: 
+● Hundreds of lines in a single file. 
+● The same label / input / error markup copy-pasted for every field. 
+● Inconsistent error styling and missing accessibility attributes. 
+● Deep prop drilling of register and errors into sub-sections. 
+Raja Software Labs Confidential 9
+The fix is the same principle used everywhere else in frontend architecture: composition and separation of concerns. 
+5.2 FormProvider and useFormContext 
+FormProvider puts the form instance into React context, so nested components can access it without prop drilling. 
+const methods = useForm({ resolver: zodResolver(schema) }) 
+<FormProvider {...methods}> 
+ <form onSubmit={methods.handleSubmit(onSubmit)}> 
+ <AddressSection /> {/* no props needed */} 
+ <PaymentSection /> 
+ </form> 
+</FormProvider>
+
+
+
+Inside any child: 
+const { register, formState: { errors } } = useFormContext()
+
+
+
+Use it when the form is split across several components. For a small single-file form, plain props are simpler. 
+5.3 Reusable Field Components 
+Instead of repeating markup, build one field component that registers itself and renders its own error. 
+function TextField({ name, label, type = "text" }) { 
+ const { register, formState: { errors } } = useFormContext() 
+ const error = errors[name] 
+ return ( 
+ <div> 
+ <label htmlFor={name}>{label}</label> 
+ <input 
+ id={name} 
+ type={type} 
+ aria-invalid={!!error} 
+ aria-describedby={error ? `${name}-error` : undefined} 
+ {...register(name)} 
+ /> 
+ {error && <p id={`${name}-error`} role="alert">{error.message}</p>}  </div> 
+ ) 
+} 
+The form then becomes readable: 
+<TextField name="email" label="Email" /> 
+<TextField name="password" label="Password" type="password" />
+
+
+
+This is the same idea as a shared component library: accessibility and error handling are solved once, and every form gets them for free. 
+5.4 Schema Composition 
+Schemas should be composed the same way components are. 
+Raja Software Labs Confidential 10
+const addressSchema = z.object({ city: z.string(), pincode: z.string() }) const contactSchema = z.object({ email: z.email() }) 
+const checkoutSchema = z.object({ 
+ ...contactSchema.shape, 
+ ...addressSchema.shape, 
+ notes: z.string().optional(), 
+})
+
+
+
+Small, named schemas can be reused across forms and shared with the backend. Note that .merge() is deprecated in Zod 4 - spreading .shape is the recommended replacement and compiles faster. 
+5.5 Organizing Form Files 
+Keep schemas out of component files. A feature-based layout works well: 
+src/ 
+|-- features/ 
+| |-- checkout/ 
+| |-- components/ CheckoutForm.tsx, AddressSection.tsx | |-- schemas/ checkout.schema.ts 
+| |-- services/ checkout.api.ts 
+| 
+|-- components/ 
+ |-- form/ TextField.tsx, SelectField.tsx, CheckboxField.tsx
+
+
+
+Shared field components live in a common folder; feature-specific schemas live with their feature. 
+Module 6 - Handling Complex Forms 
+6.1 Dynamic Fields with useFieldArray 
+For repeating rows - order line items, phone numbers, team members - use useFieldArray. 
+const { fields, append, remove } = useFieldArray({ control, name: "items" }) 
+{fields.map((field, index) => ( 
+ <div key={field.id}> {/* field.id, NOT index */}  <input {...register(`items.${index}.name`)} /> 
+ <button type="button" onClick={() => remove(index)}>Remove</button>  </div> 
+))} 
+<button type="button" onClick={() => append({ name: "" })}>Add item</button>
+
+
+
+Important rules: 
+● Use `field.id` as the key, never the array index. useFieldArray generates id for exactly this purpose; using the index breaks re-renders when rows are removed or reordered. ● Each entry must be an object, not a primitive. Flat arrays of strings are not supported. ● Do not use two useFieldArray instances with the same name. 
+● shouldUnregister: true is not supported with field arrays - it unregisters newly added fields and loses their values. 
+Validate the array in the schema: 
+items: z.array(z.object({ name: z.string().min(1) }))
+
+
+
+Raja Software Labs Confidential 11
+ .min(1, { error: "Add at least one item" })
+
+
+
+6.2 Multi-Step Forms 
+There are two workable architectures. 
+Approach 
+How it works 
+Use when
+One form, one merged schema
+A single useForm holds all 
+steps. Show one step at a time and call trigger([...fields]) before moving on.
+Most cases. State is shared automatically; back navigation is free.
+Per-step 
+schemas
+Each step validates against its own schema; the schemas are merged for final submit.
+Very long flows, or 
+steps owned by 
+different teams.
+
+
+
+const stepFields = { 
+ 0: ["name", "email"], 
+ 1: ["address", "city"], 
+} 
+const next = async () => { 
+ const valid = await trigger(stepFields[step]) // validate this step only  if (valid) setStep(step + 1) 
+}
+
+
+
+Because all values live in one form instance, you usually do not need an external store such as Zustand or Context to carry data between steps. Add one only if the data must survive a page reload, and consider persisting a draft to storage instead. 
+Reference: LogRocket - "Building a reusable multi-step form with React Hook Form and Zod" has a complete worked example with source code. 
+6.3 Conditional Fields 
+When the shape of the form depends on a choice the user makes, model it in the schema with a discriminated union. 
+const paymentSchema = z.discriminatedUnion("method", [ 
+ z.object({ method: z.literal("card"), cardNumber: z.string().length(16) }),  z.object({ method: z.literal("upi"), upiId: z.string().min(3) }), ])
+
+
+
+Then render the matching fields based on the watched value. The schema stays the source of truth, so the UI and the validation can never disagree. 
+Module 7 - Forms and the Backend 
+7.1 Client vs Server Validation 
+This distinction must be clear to every trainee: 
+Client validation 
+Server validation
+Improves user experience 
+Provides security
+
+
+
+Raja Software Labs Confidential 12
+Client validation 
+Server validation
+Gives instant feedback 
+Protects the database
+Can be bypassed easily 
+Cannot be bypassed
+Optional in theory 
+Never optional
+
+
+
+Anyone can disable JavaScript or call the API directly. Client-side validation is a convenience for honest users; it is not a security control. 
+7.2 Sharing the Schema 
+Because a schema is plain code, the same file can be imported by both sides. 
+// shared/schemas/user.schema.ts 
+export const userSchema = z.object({ ... }) 
+// client 
+useForm({ resolver: zodResolver(userSchema) }) 
+// server 
+const result = userSchema.safeParse(req.body) 
+if (!result.success) return res.status(400).json({ errors: result.error.issues })
+
+
+
+The schema becomes the contract between frontend and backend. One change updates both sides. 
+7.3 Handling Server Errors 
+Some rules can only be checked on the server - "this email is already registered". Map those back onto the form with setError. 
+const onSubmit = async (data) => { 
+ const res = await api.register(data) 
+ if (!res.ok) { 
+ const { errors } = await res.json() 
+ Object.entries(errors).forEach(([field, message]) => 
+ setError(field, { message }) 
+ ) 
+ } 
+}
+
+
+
+Distinguish validation failure (show it on the field) from network failure (show a form-level message and allow retry). 
+7.4 Async Validation 
+For checks like username availability, debounce the request so you do not call the API on every keystroke. 
+const debouncedCheck = useDebouncedCallback(() => trigger("username"), 500)
+
+
+
+Use isSubmitting to disable the submit button while a request is in flight, and prevent double submissions. 
+Module 8 - Performance and Accessibility 
+Raja Software Labs Confidential 13
+8.1 How React Hook Form Avoids Re-renders 
+React Hook Form re-renders only components that are subscribed to something that changed. Registering an input does not create a subscription; reading errors or calling watch() does. 
+formState is a Proxy: it tracks which properties you actually read and only re-renders for those. This has one important consequence - the property must be read during render, not inside a condition or a callback, or the subscription is never registered. 
+// Subscription registered - isValid updates correctly 
+const { formState: { isValid } } = useForm() 
+// No subscription - isValid will look stale 
+const { formState } = useForm() 
+const onClick = () => console.log(formState.isValid)
+
+
+
+So performance work on forms is mostly about keeping subscriptions small and low in the tree. 
+8.2 watch vs useWatch 
+`watch()` 
+`useWatch()`
+Re-renders the whole form component 
+Re-renders only the component that calls it
+Convenient for quick reads 
+Preferred inside sub-components
+watch() with no argument watches everything
+Always scoped to a specific name
+
+
+
+Two practical rules: 
+● Watch a specific field - watch("email"), not watch(). 
+● Move a watched value into its own small component so only that component re-renders. 
+8.3 Large Form Pitfalls 
+One issue is worth knowing before it is hit in production: forms with roughly 300 or more fields that use a resolver and read formState can freeze for several seconds while registering. Either one on its own is fine; the combination is the problem. 
+Practical mitigations for very large forms: 
+● Subscribe to as few formState properties as possible - each one you read creates a subscription. 
+● Use useFormState inside a small child component to isolate the subscription, instead of reading formState in the parent. 
+● Use mode: "onSubmit" so validation does not run on every change. 
+● Split the form into steps or sections so fewer fields are mounted at once. 
+8.4 Accessible Forms 
+An inaccessible form is a broken form. The basics, all of which belong in your shared field component: 
+● Every input has a <label> linked with htmlFor / id. 
+● Invalid inputs set aria-invalid={true}. 
+● The error message is linked with aria-describedby and announced with role="alert". ● Errors are not communicated by colour alone - always include text. 
+Raja Software Labs Confidential 14
+● On submit failure, move focus to the first invalid field. 
+● Error messages say how to fix the problem, not just that it exists. 
+8.5 Common Form Mistakes 
+● Not providing defaultValues. 
+● Writing TypeScript types by hand instead of inferring them from the schema. ● Keeping validation rules inside components instead of in a schema. 
+● Using Controller for plain native inputs. 
+● Using watch() where useWatch() belongs. 
+● Keying a field array on the array index instead of field.id. 
+● Relying only on client-side validation. 
+● Duplicating form state in an external store when the form already holds it. ● Rendering errors visually but never announcing them to screen readers. 
+Module 9 - Applying It: A Case Study 
+So far we have looked at the building blocks. The next question is how to use them when designing a real form. 
+In this module we will design a Vendor Onboarding form for a B2B application. The goal is not to write the full code, but to follow the thought process. 
+9.1 Understand the Requirements 
+A vendor must submit: 
+● Company details - name, registration number, category. 
+● Contact person - name, email, phone. 
+● Address - line 1, city, state, pincode. 
+● Bank details - account holder, IFSC, and either a bank account or a UPI ID. ● One or more product categories they supply (a repeating list). 
+● Acceptance of terms. 
+9.2 Identify the Steps and Fields 
+Around twenty fields is too many for one screen, so split into steps: 
+Step 1 Company details 
+Step 2 Contact and address 
+Step 3 Products supplied (dynamic list) 
+Step 4 Payment details (conditional: bank or UPI) 
+Step 5 Review and submit
+
+
+
+9.3 Design the Schema 
+Write one small schema per logical group, then compose them. 
+companySchema -> name, registrationNumber, category 
+contactSchema -> contactName, email, phone 
+addressSchema -> line1, city, state, pincode 
+productsSchema -> products: array(...).min(1) 
+paymentSchema -> discriminatedUnion on "method" 
+vendorSchema = z.object({ 
+ ...companySchema.shape, 
+ ...contactSchema.shape,
+
+
+
+Raja Software Labs Confidential 15
+ ...addressSchema.shape, 
+ ...productsSchema.shape, 
+}).and(paymentSchema) // .and() because paymentSchema is a union
+
+
+
+9.4 Break the UI into Field Components 
+Look for the inputs that repeat, and build them once. 
+components/form/ 
+|-- TextField 
+|-- SelectField 
+|-- CheckboxField 
+|-- FieldArrayRow 
+|-- FormStep
+
+
+
+Each step then becomes a thin component that composes these, with no duplicated label or error markup. 
+9.5 Decide Where Form State Lives 
+Data 
+Where it lives
+All field values 
+One useForm instance, shared via 
+FormProvider
+Current step number 
+Local useState in the wizard component
+Category / state dropdown options
+Server state (fetched, cached)
+Saved draft 
+Storage, written on step change
+
+
+
+Note that no global store is required. Reaching for Zustand or Redux here would duplicate state that React Hook Form already owns. 
+9.6 Plan Validation Timing 
+● mode: "onTouched" so users are not warned while still typing. 
+● trigger() on the current step's fields before allowing "Next". 
+● Full-schema validation on final submit. 
+● Async check on registration number, debounced. 
+9.7 Plan the Submission Flow 
+Submit clicked 
+ | 
+ v 
+handleSubmit -> full schema validation 
+ | 
+ v 
+API request (isSubmitting = true, button disabled) 
+ | 
+ +-- 200 -> reset form, show success 
+ +-- 400 -> map field errors with setError 
+ +-- 500 -> show form-level error, allow retry
+
+
+
+9.8 Apply the Form Checklist 
+Raja Software Labs Confidential 16
+Review the design before development starts: 
+● Are all validation rules in the schema rather than in components? 
+● Are TypeScript types inferred from the schema? 
+● Is the same schema used by the backend? 
+● Are field components reusable and accessible? 
+● Are defaultValues provided? 
+● Is the validation mode a deliberate UX choice? 
+● Are field arrays keyed on field.id? 
+● Are watched values scoped so they do not re-render the whole form? 
+● Is the form state kept in one place, not duplicated? 
+Gem 
+● Form Architecture & Runtime Schema Validation (React Hook Form + Zod) 
+Reference Material 
+● React Hook Form - official documentation 
+● React Hook Form - Advanced Usage (wizard forms, smart form components) ● React Hook Form - useFieldArray API 
+● Zod - official documentation 
+● @hookform/resolvers - resolver list and examples 
+● shadcn/ui - Form component built on React Hook Form + Zod 
+● LogRocket - Building a reusable multi-step form with React Hook Form and Zod 
+Video References 
+● React Hook Form - Complete Tutorial (with Zod) - Cosden Solutions 
+● Zod Validation in React - Complete Tutorial - Cosden Solutions 
+● React Hook Form Tutorial (Zod + MUI) - Beginner to Advanced 
+Advanced Reading (good to have) 
+● Valibot - an alternative schema library with a smaller bundle footprint 
+● Standard Schema - the shared interface behind swappable validators 
+● MDN - Client-side form validation 
+● W3C WAI - Forms tutorial (accessibility) 
+Raja Software Labs Confidential 17

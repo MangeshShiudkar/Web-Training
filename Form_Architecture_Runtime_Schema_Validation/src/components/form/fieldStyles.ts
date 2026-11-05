@@ -1,0 +1,2 @@
+export const inputClass = 'mt-1 block w-full rounded border border-[#cbd4ce] bg-white px-3 py-2 text-sm text-[#17231f] placeholder:text-[#86918b] focus:border-[#315e4b]'
+export const labelClass = 'block text-sm font-medium text-[#27372f]'
