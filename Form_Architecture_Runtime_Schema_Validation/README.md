@@ -44,8 +44,3 @@ One `useForm` instance is created in `src/features/job-application/JobApplicatio
 
 `src/services/mockApplicationApi.ts` waits about 1.5 seconds and returns one of three results: success, a Position field error, or a server error. Choose the result on the Review step to try each case.
 
-## Not completed
-
-- The GitHub upload, branch, and pull request have not been created.
-- Screenshots or a screen recording of the complete flow have not been added.
-- Email status updates have not been sent.

@@ -134,11 +134,11 @@ function JobApplicationWizard() {
                 Back
               </button>
               {step < stepTitles.length - 1 ? (
-                <button className="rounded bg-[#315e4b] px-5 py-2 text-sm font-semibold text-white hover:bg-[#244b39]" type="button" onClick={() => void nextStep()}>
+                <button key="continue" className="rounded bg-[#315e4b] px-5 py-2 text-sm font-semibold text-white hover:bg-[#244b39]" type="button" onClick={() => void nextStep()}>
                   Continue
                 </button>
               ) : (
-                <button className="rounded bg-[#315e4b] px-5 py-2 text-sm font-semibold text-white hover:bg-[#244b39] disabled:cursor-wait disabled:opacity-60" type="submit" disabled={methods.formState.isSubmitting}>
+                <button key="submit" className="rounded bg-[#315e4b] px-5 py-2 text-sm font-semibold text-white hover:bg-[#244b39] disabled:cursor-wait disabled:opacity-60" type="submit" disabled={methods.formState.isSubmitting}>
                   {methods.formState.isSubmitting ? 'Submitting…' : 'Submit application'}
                 </button>
               )}
