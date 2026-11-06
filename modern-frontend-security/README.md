@@ -87,3 +87,15 @@ for (const key in incomingSettings) {
 **Fix:** Added Helmet with an enforced CSP delivered in the HTTP response. The policy restricts resources to the same origin, disables objects, limits form actions and base URLs, and sets `frame-ancestors 'none'`. A fresh unpredictable nonce is generated per response and added only to the application's existing trusted inline scripts and account-page style block. The policy does not use `unsafe-inline` or `unsafe-eval`.
 
 **Testing and verification:** Confirmed the `/` response contain the CSP header and that each response's inline script/style nonce matches its own policy. The dashboard's nonce-authorized initialization script ran. Appended an inline script without a nonce in the browser Console; CSP blocked it and it did not set the test marker. The dashboard still rendered and **Save Settings** returned “Settings saved successfully.”
+
+### Finding 4: SSR Token Leakage
+
+**Location:** `server/server.js`, the dashboard route and `GET /api/profile`.
+
+**Vulnerable implementation:** The server serialized the complete `user` object into `window.initialUser` and returned that same object from the profile API. The object contains session and refresh token fields, so sending it to the browser exposed server-side authentication data in the HTML and JSON response.
+
+**Security boundary:** `user` is server-side data. Embedding it in HTML or returning it from a client-facing API crosses the server-to-browser boundary; only fields required by the client should cross it.
+
+**Fix:** Created a client-safe `clientUser` DTO containing only `id`, `name`, `email`, and `role`. Both the SSR bootstrap script and `/api/profile` now use this DTO, leaving token fields on the server.
+
+**Testing and verification:** Confirmed the dashboard still displays the user's name, email, and role. Checked the `/` HTML response for `sessionToken`, `refreshToken`, and the fake token values; none were present. Checked `/api/profile`; it returned only `id`, `name`, `email`, and `role`. The CSP response header remained present and **Save Settings** continued to work.

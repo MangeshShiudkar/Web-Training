@@ -5,6 +5,13 @@ const { randomBytes } = require("crypto");
 
 const { user, defaultSettings } = require("./data");
 
+const clientUser = {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    role: user.role
+};
+
 const app = express();
 const PORT = 3000;
 const allowedSettings = {
@@ -40,7 +47,7 @@ app.use(helmet({
  * Home page
  */
 app.get("/", (req, res) => {
-    const initialUserData = JSON.stringify(user);
+    const initialUserData = JSON.stringify(clientUser);
 
     res.send(`
         <!DOCTYPE html>
@@ -117,7 +124,7 @@ app.get("/", (req, res) => {
  * Profile API
  */
 app.get("/api/profile", (req, res) => {
-    res.json(user);
+    res.json(clientUser);
 });
 
 /*
