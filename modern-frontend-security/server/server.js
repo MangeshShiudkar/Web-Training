@@ -5,6 +5,11 @@ const { user, defaultSettings } = require("./data");
 
 const app = express();
 const PORT = 3000;
+const allowedSettings = {
+    theme: ["light", "dark"],
+    language: ["en", "fr"],
+    fontSize: ["small", "medium", "large"]
+};
 
 app.use(express.json());
 
@@ -102,10 +107,34 @@ app.get("/api/settings", (req, res) => {
 app.post("/api/settings", (req, res) => {
     const incomingSettings = req.body;
 
-    const settings = {};
+    if (
+        incomingSettings === null ||
+        typeof incomingSettings !== "object" ||
+        Array.isArray(incomingSettings)
+    ) {
+        return res.status(400).json({
+            message: "Settings must be a JSON object."
+        });
+    }
 
-    for (const key in incomingSettings) {
-        settings[key] = incomingSettings[key];
+    const settings = Object.create(null);
+
+    for (const [key, value] of Object.entries(incomingSettings)) {
+        if (!Object.prototype.hasOwnProperty.call(allowedSettings, key)) {
+            return res.status(400).json({
+                message: `Invalid setting: ${key}`
+            });
+        }
+
+        const allowedValues = allowedSettings[key];
+
+        if (!allowedValues.includes(value)) {
+            return res.status(400).json({
+                message: `Invalid setting: ${key}`
+            });
+        }
+
+        settings[key] = value;
     }
 
     res.json({

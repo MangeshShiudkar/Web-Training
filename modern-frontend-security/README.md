@@ -57,3 +57,23 @@ http://localhost:3000/?name=%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E
 ```
 
 Verified in the browser that the welcome heading displays the literal `<img src=x onerror=alert(1)>` text and no injected image element is created. The dashboard profile and settings controls still render, and clicking **Save Settings** displays “Settings saved successfully.”
+
+### Finding 2: Prototype Pollution Risk in Settings Merge
+
+**Location:** `server/server.js`, `POST /api/settings`.
+
+**Vulnerable implementation:** The endpoint copied every property from the request body to a normal object without validating the property names or values:
+
+```js
+const settings = {};
+
+for (const key in incomingSettings) {
+	settings[key] = incomingSettings[key];
+}
+```
+
+**Source and risk:** `req.body` is client-controlled JSON. Assigning an attacker-supplied `__proto__` key to a normal object can change that settings object's prototype and introduce unexpected inherited properties. This pattern affects the temporary settings object; it does not by itself establish pollution of global `Object.prototype`.
+
+**Fix:** The endpoint now accepts only the supported `theme`, `language`, and `fontSize` keys with their expected values. It checks that each key is an own property of the allowlist before looking up its allowed values, rejects invalid input with HTTP 400, and uses a null-prototype object for the result.
+
+**Testing and verification:** Submitted valid settings (`dark`, `fr`, `large`) and received HTTP 200 with “Settings saved successfully.” Submitted `{"__proto__":{"polluted":"yes"}}` and received HTTP 400 with “Invalid setting: __proto__”. An unsupported value (`{"theme":"ultraviolet"}`) also received HTTP 400. The normal dashboard save flow remains supported.
