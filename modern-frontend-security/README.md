@@ -77,3 +77,13 @@ for (const key in incomingSettings) {
 **Fix:** The endpoint now accepts only the supported `theme`, `language`, and `fontSize` keys with their expected values. It checks that each key is an own property of the allowlist before looking up its allowed values, rejects invalid input with HTTP 400, and uses a null-prototype object for the result.
 
 **Testing and verification:** Submitted valid settings (`dark`, `fr`, `large`) and received HTTP 200 with “Settings saved successfully.” Submitted `{"__proto__":{"polluted":"yes"}}` and received HTTP 400 with “Invalid setting: __proto__”. An unsupported value (`{"theme":"ultraviolet"}`) also received HTTP 400. The normal dashboard save flow remains supported.
+
+### Finding 3: Missing Content Security Policy (CSP)
+
+**Location:** `server/server.js`, HTTP responses for the dashboard and account page.
+
+**Vulnerable implementation:** The server did not set a Content Security Policy response header. The dashboard also contains an inline script, so the browser had no policy restricting which scripts could execute. If another issue such as DOM XSS were present, CSP would not be available as a defense-in-depth layer.
+
+**Fix:** Added Helmet with an enforced CSP delivered in the HTTP response. The policy restricts resources to the same origin, disables objects, limits form actions and base URLs, and sets `frame-ancestors 'none'`. A fresh unpredictable nonce is generated per response and added only to the application's existing trusted inline scripts and account-page style block. The policy does not use `unsafe-inline` or `unsafe-eval`.
+
+**Testing and verification:** Confirmed the `/` response contain the CSP header and that each response's inline script/style nonce matches its own policy. The dashboard's nonce-authorized initialization script ran. Appended an inline script without a nonce in the browser Console; CSP blocked it and it did not set the test marker. The dashboard still rendered and **Save Settings** returned “Settings saved successfully.”

@@ -1,5 +1,7 @@
 const express = require("express");
+const helmet = require("helmet");
 const path = require("path");
+const { randomBytes } = require("crypto");
 
 const { user, defaultSettings } = require("./data");
 
@@ -12,6 +14,27 @@ const allowedSettings = {
 };
 
 app.use(express.json());
+
+app.use((req, res, next) => {
+    res.locals.cspNonce = randomBytes(16).toString("base64");
+    next();
+});
+
+app.use(helmet({
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'self'"],
+            scriptSrc: ["'self'", (req, res) => `'nonce-${res.locals.cspNonce}'`],
+            styleSrc: ["'self'", (req, res) => `'nonce-${res.locals.cspNonce}'`],
+            imgSrc: ["'self'", "data:"],
+            connectSrc: ["'self'"],
+            objectSrc: ["'none'"],
+            baseUri: ["'self'"],
+            frameAncestors: ["'none'"],
+            formAction: ["'self'"]
+        }
+    }
+}));
 
 /*
  * Home page
@@ -80,7 +103,7 @@ app.get("/", (req, res) => {
                 </section>
             </main>
 
-            <script>
+            <script nonce="${res.locals.cspNonce}">
                 window.initialUser = ${initialUserData};
             </script>
 
@@ -158,7 +181,7 @@ app.get("/account", (req, res) => {
             >
             <title>Account Settings</title>
 
-            <style>
+            <style nonce="${res.locals.cspNonce}">
                 body {
                     font-family: Arial, sans-serif;
                     background: #f4f4f4;
@@ -214,7 +237,7 @@ app.get("/account", (req, res) => {
                 <p id="status"></p>
             </div>
 
-            <script>
+            <script nonce="${res.locals.cspNonce}">
                 document
                     .getElementById("delete-account")
                     .addEventListener("click", () => {
