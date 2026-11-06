@@ -1,0 +1,11 @@
+Finding 1: location.hash to innerHTML - DOM-Based Cross-Site Scripting (DOM XSS)
+The URL fragment is attacker-controlled input. Assigning it to innerHTML makes the browser parse the value as HTML, which can allow injected markup and event-handler code to execute in the application's origin. If the value is meant to be plain text, use textContent. If HTML is a genuine requirement, sanitize it with a well-maintained HTML sanitizer and a restrictive allowlist.
+
+Finding 2: localStorage config merged with Object.assign - Prototype Pollution / Unsafe Object Merge
+localStorage is untrusted because users and same-origin scripts can change its contents. A parsed object containing a special property such as __proto__ can interact with Object.assign's property assignment on the ordinary config object and change that object's prototype, leading to unexpected inherited properties or behavior. This code does not by itself prove global Object.prototype pollution. Validate the parsed value against a schema and copy only explicitly allowed configuration keys; consider a null-prototype object or Map for dictionary-like data.
+
+Finding 3: JSON.parse(localStorage.getItem("config")) - Unvalidated Persistent Input / Availability Risk
+Stored data may be missing, malformed, or have an unexpected shape. Invalid JSON makes JSON.parse throw, and the shown code has no error handling, which can interrupt application initialization or the operation using this configuration. Handle parse failures, validate the resulting data and types, and fall back to safe defaults.
+
+Finding 4: renderClient({ user }) - Potential SSR Token or Sensitive-Data Leakage
+The full user object returned by getUser() is passed across the server-to-client boundary. If it contains access or refresh tokens, private fields, or other data the browser does not need, a client renderer that serializes its arguments could expose them in HTML or client-side state. Send a minimal client DTO containing only required, non-secret fields, and inspect renderClient's serialization behavior. The snippet alone does not establish that the object actually contains a token or that serialization occurs.
