@@ -28,6 +28,7 @@ app.use((req, res, next) => {
 });
 
 app.use(helmet({
+    xFrameOptions: { action: "deny" },
     contentSecurityPolicy: {
         directives: {
             defaultSrc: ["'self'"],

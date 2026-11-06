@@ -99,3 +99,15 @@ for (const key in incomingSettings) {
 **Fix:** Created a client-safe `clientUser` DTO containing only `id`, `name`, `email`, and `role`. Both the SSR bootstrap script and `/api/profile` now use this DTO, leaving token fields on the server.
 
 **Testing and verification:** Confirmed the dashboard still displays the user's name, email, and role. Checked the `/` HTML response for `sessionToken`, `refreshToken`, and the fake token values; none were present. Checked `/api/profile`; it returned only `id`, `name`, `email`, and `role`. The CSP response header remained present and **Save Settings** continued to work.
+
+### Finding 5: Clickjacking Through Unrestricted Framing
+
+**Location:** `server/server.js`, HTTP responses including the `/account` page.
+
+**Vulnerable implementation:** The original server allowed the account page to load inside an iframe on another site. An attacker could disguise or overlay the framed page to trick a user into clicking a sensitive control, such as **Delete Account**.
+
+**Security boundary:** The browser must control which sites may embed the application's pages. The account page contains a sensitive-action control, so arbitrary framing should not be allowed.
+
+**Fix:** The enforced CSP includes `frame-ancestors 'none'`, preventing the app from being embedded by any site. Helmet also sends `X-Frame-Options: DENY` as a compatibility defense.
+
+**Testing and verification:** Open `test/iframe-test.html` while the fixed app is running. The account page should be blocked inside the iframe. In DevTools → **Network**, inspect the `/account` response and confirm `Content-Security-Policy` includes `frame-ancestors 'none'` and `X-Frame-Options` is `DENY`. Navigate directly to `/account` to confirm the page remains available outside a frame.
